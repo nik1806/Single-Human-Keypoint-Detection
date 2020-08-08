@@ -6,7 +6,44 @@ import cv2
 # for transforms
 import torch
 from torchvision import transforms
+import numpy as np  
 
+
+class RandomCrop(object):
+    """
+        Randomly crop the image in a sample. Accordingly, the range of keypoints will be changed.
+    """
+
+    def __init__(self, output_size:[int, tuple, list]):
+        '''
+        Args:
+            output_size : Desired output size. If int, square crop is made.
+            If tuple or list, output is matched exactly.
+        '''
+        assert isinstance(output_size, (int, tuple, list))
+        if isinstance(output_size, int):
+            self.output_size = (output_size, output_size)
+        else:
+            assert len(output_size) == 2
+            self.output_size = output_size
+
+    def __call__(self, sample):
+        image, key_pts = sample['image'], sample['keypoints']
+
+        h, w = image.shape[:2]
+        new_h, new_w = self.output_size
+
+        top = np.random.randint(0, h - new_h)
+        left = np.random.randint(0, w - new_w)
+
+        image = image[top: top + new_h,
+                      left: left + new_w]
+        # resize keypoints
+        key_pts = [key_pts[i] - (left * (1 - i%2) + top * (i%2))  for i in range(len(key_pts))]
+
+        return {'image':image, 'keypoints':key_pts}
+
+    
 class Resize(object):
     """
         Rescale the images to a given size. Accordingly, the range of keypoints will be changed.    
@@ -37,12 +74,12 @@ class Resize(object):
 
         new_h, new_w = int(new_h), int(new_w)
 
-        img = cv2.resize(image, (new_w, new_h))
+        image = cv2.resize(image, (new_w, new_h))
 
         # resize keypoints
         key_pts = [key_pts[i] * (new_w/w * (1 - i%2) + new_h/h * (i%2))  for i in range(len(key_pts))]
 
-        return {'image':img, 'keypoints':key_pts}
+        return {'image':image, 'keypoints':key_pts}
 
 class LIPDataset(Dataset):
     ''' Custom dataset class to handle LIP data '''
