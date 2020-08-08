@@ -6,7 +6,38 @@ import cv2
 # for transforms
 import torch
 from torchvision import transforms
-import numpy as np  
+import numpy as np
+
+class RandomHorizontalFlip(object):
+    """ 
+        Horizontally flip the given image with a given probability.
+        Keypoints are changed accordingly. It takes only ndarray images and not tensor datatype
+    """
+
+    def __init__(self, p=0.5):
+        """
+        Args:
+            p : the probability of sample being flipped. Default value is 0.5
+        """
+        self.p = p
+
+    def __call__(self, sample:dict):
+        """
+        Args:
+            sample : Contain image and keypoints
+
+        Returns:
+            Randomly flipped image and keypoints
+        """
+        if np.random.rand(1) < self.p:
+            image, key_pts = sample['image'], sample['keypoints']
+
+            w, h = image.shape[:2]
+            key_pts = np.asarray([w - key_pts[i]  if i%2==0 and key_pts[i]>0 else key_pts[i] for i in range(len(key_pts))])
+            return {'image':cv2.flip(image, 1), 'keypoints':key_pts}
+
+        return sample
+
 
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
