@@ -8,6 +8,19 @@ import torch
 from torchvision import transforms
 import numpy as np
 
+def untransform_n_display(dataset, index:int):
+    ''' Transform  the sample to display (Mainly converting from tensor to numpy array)
+    Args:
+        dataset : Keypoints dataset 
+        index : index of datapoint to use
+
+    '''
+    sample = dataset[index]
+    sample['image'] = sample['image'].data.numpy().transpose((1,2,0))
+    sample['keypoints'] = sample['keypoints'].data.numpy()
+
+    plot_data(sample)
+
 class RandomHorizontalFlip(object):
     """ 
         Horizontally flip the given image with a given probability.
