@@ -69,8 +69,8 @@ class ToTensor(object):
         image = image.transpose((2, 0, 1))
         key_pts = np.asarray(key_pts, dtype=np.float)
         
-        return {'image': torch.from_numpy(image),
-                'keypoints': torch.from_numpy(key_pts)}
+        return {'image': torch.from_numpy(image).type(torch.FloatTensor),
+                'keypoints': torch.from_numpy(key_pts).type(torch.FloatTensor)}
 class RandomCrop(object):
     """
         Randomly crop the image in a sample. Accordingly, the range of keypoints will be changed.
