@@ -21,6 +21,34 @@ def untransform_n_display(dataset, index:int):
 
     plot_data(sample)
 
+class Normalize(transforms.Normalize):
+    '''
+        Normalize the values of sample (tensor image and keypoints)
+        This class inherit torchvision.transforms.Normalize class to perfrom normalization on tensor image.
+    '''
+    
+    def __init__(self, mean, std, inplace: bool = False):
+        '''
+        Args:
+            mean (sequence): Sequence of means for each channel.
+            std (sequence): Sequence of standard deviations for each channel.
+            inplace : Bool to make this operation in-place.
+        '''
+        super().__init__(mean, std, inplace)
+
+    def __call__(self, sample:dict):
+        """
+        Args:
+            sample : Contain image and keypoints
+
+        Returns:
+            Normalized image and keypoints
+        """
+        img = sample['image'] / 255.0 # changing value range from [0, 255] -> [0, 1]
+        sample['image'] = super().__call__(img) # normalize image
+
+        return sample
+
 class RandomHorizontalFlip(object):
     """ 
         Horizontally flip the given image with a given probability.
