@@ -6,20 +6,39 @@ import cv2
 # for transforms
 import torch
 from torchvision import transforms
+import torch.nn.functional as F
 import numpy as np
 
-def untransform_n_display(dataset, index:int):
+def untransform_n_display(dataset, index:int, mean, std):
     ''' Transform  the sample to display (Mainly converting from tensor to numpy array)
     Args:
         dataset : Keypoints dataset 
         index : index of datapoint to use
+        mean, std (sequence): Used to normalize image
 
     '''
-    sample = dataset[index]
-    sample['image'] = sample['image'].data.numpy().transpose((1,2,0)).astype(np.uint8)
+    sample = dataset[index] # extract sample at index
+    image = sample['image'] # extract image
+
+    image = image.data.numpy() # data in image and current form of matrix
+    image = unNormalize(image, mean, std) # unNormalize
+    sample['image'] = image.transpose((1,2,0)).astype(np.uint8) # change dtype to correct format for display
+
     sample['keypoints'] = sample['keypoints'].data.numpy()
 
     plot_data(sample)
+
+def unNormalize(image, mean, std):
+    '''
+        Undo the normalization using mean and std.
+        image (ndarray, type=Float)
+    '''
+    # from (approx) [-1,1] to [0,1]
+    for i in range(3):
+        image[i] = (image[i] * std[i] + mean[i])
+
+    return image*255.0 # [0, 1] to [0, 255]
+    
 
 class Normalize(transforms.Normalize):
     '''
