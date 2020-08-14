@@ -16,7 +16,7 @@ def untransform_n_display(dataset, index:int):
 
     '''
     sample = dataset[index]
-    sample['image'] = sample['image'].data.numpy().transpose((1,2,0))
+    sample['image'] = sample['image'].data.numpy().transpose((1,2,0)).astype(np.uint8)
     sample['keypoints'] = sample['keypoints'].data.numpy()
 
     plot_data(sample)
