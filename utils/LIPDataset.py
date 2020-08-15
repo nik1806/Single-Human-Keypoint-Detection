@@ -9,7 +9,7 @@ from torchvision import transforms
 import torch.nn.functional as F
 import numpy as np
 
-def untransform_n_display(dataset, index:int, mean, std):
+def untransform_n_display(dataset, index : int, mean, std):
     ''' Transform  the sample to display (Mainly converting from tensor to numpy array)
     Args:
         dataset : Keypoints dataset 
@@ -58,13 +58,19 @@ class Normalize(transforms.Normalize):
     def __call__(self, sample:dict):
         """
         Args:
-            sample : Contain image and keypoints
+            sample : Contain image (3-dimensional) and keypoints
 
         Returns:
             Normalized image and keypoints
         """
+        max_keypts = sample['image'].shape[1] # maximum possible value for keypoints
+
         img = sample['image'] / 255.0 # changing value range from [0, 255] -> [0, 1]
         sample['image'] = super().__call__(img) # normalize image
+
+        keypts = sample['keypoints']
+        keypts /= max_keypts # changing value range from [0, max_keypts] -> [0, 1]
+        keypts = (keypts - 0.5) / 0.5 # from [0, 1] -> [-1, 1]
 
         return sample
 
