@@ -6,20 +6,52 @@ import cv2
 # for transforms
 import torch
 from torchvision import transforms
+import torch.nn.functional as F
 import numpy as np
 
-def untransform_n_display(dataset, index:int):
+def untransform_n_display(dataset, index : int, mean, std):
     ''' Transform  the sample to display (Mainly converting from tensor to numpy array)
     Args:
         dataset : Keypoints dataset 
         index : index of datapoint to use
+        mean, std (sequence): Used to normalize image
 
     '''
-    sample = dataset[index]
-    sample['image'] = sample['image'].data.numpy().transpose((1,2,0)).astype(np.uint8)
+    sample = dataset[index] # extract sample at index
+    image = sample['image'] # extract image
+
     sample['keypoints'] = sample['keypoints'].data.numpy()
+    sample['image'] = sample['image'].data.numpy() # data in image and current form of matrix
+    sample = unNormalize(sample, mean, std) # unNormalize
+    sample['image'] = sample['image'].transpose((1,2,0)).astype(np.uint8) # change dtype to correct format for display
+
 
     plot_data(sample)
+
+def unNormalize(sample, mean, std):
+    '''
+        Undo the normalization using mean and std for image.
+        For keypoints, standard figures are used
+        image (ndarray, type=Float)
+    '''
+
+
+    # IMAGE OPERATIONS  
+    image = sample['image']
+    # from (approx) [-1,1] to [0,1]
+    for i in range(3):
+        image[i] = (image[i] * std[i] + mean[i])
+    sample['image'] = image*255.0 # [0, 1] to [0, 255]
+    
+    # KEYPOINT OPERATIONS  
+    keypts = sample['keypoints']
+    keypts = keypts * 0.5 + 0.5 # from [-1, 1] -> [0, 1] 
+    max_keypts = sample['image'].shape[1] # maximum possible value for keypoints
+    keypts *= max_keypts # changing value range from [0, 1] -> [0, max_keypts] 
+    sample['keypoints'] = keypts
+
+    return sample
+    
 
 class Normalize(transforms.Normalize):
     '''
@@ -39,13 +71,18 @@ class Normalize(transforms.Normalize):
     def __call__(self, sample:dict):
         """
         Args:
-            sample : Contain image and keypoints
+            sample : Contain image (3-dimensional) and keypoints
 
         Returns:
             Normalized image and keypoints
         """
         img = sample['image'] / 255.0 # changing value range from [0, 255] -> [0, 1]
         sample['image'] = super().__call__(img) # normalize image
+
+        max_keypts = sample['image'].shape[1] # maximum possible value for keypoints
+        keypts = sample['keypoints']
+        keypts /= max_keypts # changing value range from [0, max_keypts] -> [0, 1]
+        sample['keypoints'] = (keypts - 0.5) / 0.5 # from [0, 1] -> [-1, 1]
 
         return sample
 
