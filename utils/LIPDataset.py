@@ -9,13 +9,13 @@ from torchvision import transforms
 import torch.nn.functional as F
 import numpy as np
 
-def untransform_n_display(dataset, index : int, mean, std):
+def untransform_n_display(dataset, index : int, mean, std, mode:int = 0):
     ''' Transform  the sample to display (Mainly converting from tensor to numpy array)
     Args:
         dataset : Keypoints dataset 
         index : index of datapoint to use
         mean, std (sequence): Used to normalize image
-
+        mode: if 0 - draw only points, if 3 - draw only skeleton, if 2 - draw both
     '''
     sample = dataset[index] # extract sample at index
     image = sample['image'] # extract image
@@ -26,7 +26,7 @@ def untransform_n_display(dataset, index : int, mean, std):
     sample['image'] = sample['image'].transpose((1,2,0)).astype(np.uint8) # change dtype to correct format for display
 
 
-    plot_data(sample)
+    plot_data(sample, mode)
 
 def unNormalize(sample, mean, std):
     '''
@@ -237,8 +237,14 @@ class LIPDataset(Dataset):
 
         return sample
 
-def plot_data(sample):
-    ''' Drawing joints and bones on images '''
+def plot_data(sample, mode: int = 0):
+    ''' Drawing joints and bones on images based on set mode.
+    Args:
+        sample: Data point to display   
+        mode: if 0 - draw only points, if 3 - draw only skeleton, if 2 - draw both
+    '''
+
+    assert(isinstance(mode, int))
 
     img = sample['image'] # retrive image
     rec = sample['keypoints'] # retrive points coordinates
@@ -259,15 +265,18 @@ def plot_data(sample):
         color = colors[b_id]
         x1 = rec[ b[0] * 2 + 0]
         y1 = rec[ b[0] * 2 + 1]
-
         x2 = rec[ b[1] * 2 + 0]
         y2 = rec[ b[1] * 2 + 1]
 
-        if x1 > 0 and x2 > 0 and y1 > 0 and y2 > 0:
+        pt1_allow = x1 > 0 and y1 > 0
+        pt2_allow = x2 > 0 and y2 > 0
+
+        if pt1_allow and pt2_allow and mode > 0: # skeleton
             img = cv2.line(img, (int(x1),int(y1)), (int(x2),int(y2)), color, 3) 
-        elif x1 > 0 and y1 > 0:
+        # keypoints
+        elif pt1_allow and mode < 3:
             img = cv2.circle(img, (int(x1), int(y1)), 4, color, 4) 
-        elif x2 > 0 and y2 > 0:
+        elif pt2_allow and mode < 3:
             img = cv2.circle(img, (int(x2), int(y2)), 4, color, 4)
     
     cv2.imshow('Human keypoints', img)
