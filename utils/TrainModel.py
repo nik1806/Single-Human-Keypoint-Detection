@@ -1,6 +1,67 @@
 # essential resources
+import torch
 from torch import nn
 from torchvision import models
+
+# for random_test function
+import numpy as np
+from utils.LIPDataset import untransform_n_display
+
+def random_test(dataset, model, norm_param: list, display: bool = True):
+    ''' Chose a random data point, perform inference. If set the 'display' flag display the results. 
+    Args:
+        dataset: image & keypoint dataset
+        model: NN
+        display(Optional): If True display the result, else no.
+        norm_param: Contain mean and standard deviation of the normalized transformation
+    Return: 
+        the test data point and prediction
+        sample: Custom datatype contain image and keypts
+        pred_pts: Keypoints predicted by model
+    '''
+    # selecting random data element
+    idx = np.random.randint(len(dataset))
+    sample = dataset[idx]
+    # to gpu for faster inference
+    model = model.cuda()
+    # inference
+    image, actual_pts, pred_pts = inference(model, sample.copy())
+    # transfer to cpu
+    model = model.cpu()
+    torch.cuda.empty_cache()
+
+    # display the predicted
+    if display:
+        untransform_n_display([{'image':image, 'keypoints':pred_pts}], 0, *norm_param)
+
+    return sample, pred_pts
+
+def inference(model, sample):
+    '''
+        Perform single inference on image. Reformat input image and output predicted keypoints
+    Args:
+        model: NN, sample: custom dataset element (for representing human pose keypoints)
+    Return:
+        output_image: input image (tensor)
+        actual_keypts: the ground-truth for keypoints (shape:[32]) transp
+        pred_keypts: the predicted keypoints (shape:[32])
+        (every element in cpu device)
+    '''
+
+    # model = model.cuda()
+
+    image = sample['image'].unsqueeze(0)
+    # inference
+    model.eval()
+
+    with torch.no_grad(): # not storing previous computational graph    
+        pred = model.forward(image.cuda())
+
+    # model = model.cpu()
+    pred = pred.cpu().reshape(32)
+    # torch.cuda.empty_cache()
+    return sample['image'], sample['keypoints'], pred
+
 
 def initialize_model( num_classes: int, use_pretrained: bool = True):
     '''
