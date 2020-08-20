@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 import os
 import cv2
+import matplotlib.pyplot as plt 
 # for transforms
 import torch
 from torchvision import transforms
@@ -227,7 +228,9 @@ class LIPDataset(Dataset):
 
     def __getitem__(self, idx):
         img_name = os.path.join(self.root_dir, self.key_pts.iloc[idx, 0])
-        img = cv2.imread(img_name, cv2.IMREAD_COLOR) # RGB format
+        # img = cv2.imread(img_name, cv2.IMREAD_COLOR)
+        img = cv2.imread(img_name) 
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)# RGB format
 
         keypts = self.key_pts.iloc[idx, 1:].values
         sample = {'image':img, 'keypoints':keypts}
@@ -254,15 +257,18 @@ def plot_data(sample, mode: int = 0):
             ,[6,7],[7,8],[8,9]
             ,[10,11],[11,12]
             ,[13,14],[14,15] ]
-    colors = [(255,0,0),(255,0,0),
+    colors = np.array([(255,0,0),(255,0,0),
               (0,255,0),(0,255,0),
               (0,0,255),(0,0,255),(0,0,255),
               (128,128,0),(128,128,0),
-              (128,0,128),(128,0,128)]
+              (128,0,128),(128,0,128)])
+    
+    plt.axis('off') # removing numbered axis
+    plt.imshow(img)
 
     for b_id in range(len(bombs)):
         b = bombs[b_id]
-        color = colors[b_id]
+        color = colors[b_id]/255.0
         x1 = rec[ b[0] * 2 + 0]
         y1 = rec[ b[0] * 2 + 1]
         x2 = rec[ b[1] * 2 + 0]
@@ -272,14 +278,19 @@ def plot_data(sample, mode: int = 0):
         pt2_allow = x2 > 0 and y2 > 0
 
         if pt1_allow and pt2_allow and mode > 0: # skeleton
-            img = cv2.line(img, (int(x1),int(y1)), (int(x2),int(y2)), color, 3) 
+            # img = cv2.line(img, (int(x1),int(y1)), (int(x2),int(y2)), color, 3)
+            plt.plot([x1, x2], [y1, y2], c=color, linewidth=3) 
         # keypoints
         elif pt1_allow and mode < 3:
-            img = cv2.circle(img, (int(x1), int(y1)), 4, color, 4) 
+            # img = cv2.circle(img, (int(x1), int(y1)), 4, color, 4)
+            plt.scatter(x1, y1, marker='.', c=color.reshape(1,-1), linewidths=6) 
         elif pt2_allow and mode < 3:
-            img = cv2.circle(img, (int(x2), int(y2)), 4, color, 4)
+            plt.scatter(x2, y2, marker='.', c=color.reshape(1,-1), linewidths=6) 
+            # img = cv2.circle(img, (int(x2), int(y2)), 4, color, 4)
     
-    cv2.imshow('Human keypoints', img)
-    cv2.waitKey(0)
+    plt.imshow(img)
+    plt.show()
+    # cv2.imshow('Human keypoints', img)
+    # cv2.waitKey(0)
         
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
