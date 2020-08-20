@@ -95,13 +95,16 @@ class TrainModel(object):
                     avg_train_loss = running_loss/prt_idx
                     avg_valid_loss = temp_loss/len(self.valid_loader)
                     print(f'Epoch: {i}, Batch: {batch_i}, Train Avg. Loss: {avg_train_loss}, Validation Avg. Loss:{avg_valid_loss}')
+                    # saving model with better performance
+                    if avg_valid_loss < valid_loss[-1] and save_model:
+                        torch.save(self.model.state_dict(), 'models/state_dict.pt')
                     # storing avg loss for analysis later
                     train_loss.append(avg_train_loss)
                     valid_loss.append(avg_valid_loss)
                     running_loss = 0.0
                     self.model.train() # return to trian mode for next loop
 
-                    break # break after one turn
+                    # break # break after one turn, just for testing
 
         print("Training complete")
         # transfer to cpu
